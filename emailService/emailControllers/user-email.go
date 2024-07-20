@@ -18,7 +18,7 @@ type EmailData struct {
 	ID string `json:"email_id"`
 }
 
-func VerifyUser(c *gin.Context) {
+func SendEmailToVerify(c *gin.Context) {
 
 	email := c.Param("email")
 
