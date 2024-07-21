@@ -10,6 +10,7 @@ import (
 	models "github.com/harsh082ip/scrapeit/Models"
 	"github.com/harsh082ip/scrapeit/db"
 	"github.com/harsh082ip/scrapeit/helpers"
+	authhelper "github.com/harsh082ip/scrapeit/helpers/authHelper"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
@@ -82,7 +83,7 @@ func SignUp(c *gin.Context) {
 		return
 	}
 
-	user.Password, err = helpers.HashPassword(user.Password)
+	user.Password, err = authhelper.HashPassword(user.Password)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{
 			"status": "Error in generating hash for password",

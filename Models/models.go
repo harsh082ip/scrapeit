@@ -1,6 +1,9 @@
 package models
 
-import "go.mongodb.org/mongo-driver/bson/primitive"
+import (
+	"github.com/dgrijalva/jwt-go"
+	"go.mongodb.org/mongo-driver/bson/primitive"
+)
 
 type User struct {
 	ID       primitive.ObjectID `bson:"_id,omitempty" json:"id,omitempty"`
@@ -12,10 +15,16 @@ type User struct {
 
 type LoginUser struct {
 	LoginID  string `json:"login_id" binding:"required"`
-	Password string `json:"password" binding:"password"`
+	Password string `json:"password" binding:"required"`
 }
 
 type AppCredits struct {
 	Email        string
 	TotalCredits string
+}
+
+type Claims struct {
+	CompanyName string `json:"comp_name"`
+	LoginID     string `json:"username"`
+	jwt.StandardClaims
 }
