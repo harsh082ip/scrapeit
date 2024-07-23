@@ -19,8 +19,9 @@ type LoginUser struct {
 }
 
 type AppCredits struct {
-	Email        string
-	TotalCredits string
+	ID           primitive.ObjectID `bson:"_id,omitempty" json:"id,omitempty"`
+	Email        string             `json:"email" binding:"required,email"`
+	TotalCredits int                `json:"total_credits" binding:"required"`
 }
 
 type Claims struct {

@@ -69,6 +69,15 @@ func Login(c *gin.Context) {
 		return
 	}
 
+	cookieExpiration := 30 * 24 * 60 * 60
+
+	/*
+		TODO:
+			Set the secure flag to true for production environments
+			to ensure the cookie is only sent over HTTPS.
+	*/
+	c.SetCookie("jwt_key", userJwtToken, cookieExpiration, "/", "localhost", false, true)
+
 	// Return successful login response with JWT token
 	c.JSON(http.StatusOK, gin.H{
 		"status":    "All Good! User Login Successful",

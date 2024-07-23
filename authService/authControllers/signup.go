@@ -47,10 +47,20 @@ func SignUp(c *gin.Context) {
 		return
 	}
 
+	count, err = coll.CountDocuments(ctx, usernameFilter)
+	if err != nil && err != mongo.ErrNilDocument {
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"status": "Error While Checking for Doc",
+			"error":  err.Error(),
+			"count":  count,
+		})
+		return
+	}
+
 	if count > 0 {
 		c.JSON(http.StatusInternalServerError, gin.H{
 			"status": "Doc Duplication not allowed",
-			"error":  "this email already exists",
+			"error":  "this email or username already exists",
 		})
 		return
 	}

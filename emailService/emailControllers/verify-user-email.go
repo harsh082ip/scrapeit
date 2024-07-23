@@ -3,6 +3,7 @@ package emailcontrollers
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"net/http"
 	"time"
 
@@ -11,6 +12,8 @@ import (
 	"github.com/harsh082ip/scrapeit/db"
 	"github.com/harsh082ip/scrapeit/helpers"
 	"github.com/redis/go-redis/v9"
+	"go.mongodb.org/mongo-driver/mongo"
+	"go.mongodb.org/mongo-driver/mongo/options"
 	"gopkg.in/mgo.v2/bson"
 )
 
@@ -19,11 +22,14 @@ func VerifyUserEmail(c *gin.Context) {
 	email := c.Param("email")
 	rdb := db.RedisConnect()
 	key := "user:" + email
-	ctx, cancel := context.WithTimeout(c, time.Second*15)
+	ctx, cancel := context.WithTimeout(c, time.Second*30)
 	defer cancel()
 	var user models.User
 	collName := "Users"
-	coll := db.OpenCollection(db.Client, collName)
+	collName2 := "Credits"
+	mongoClient := db.Client
+	coll := db.OpenCollection(mongoClient, collName)
+	coll2 := db.OpenCollection(mongoClient, collName2)
 	emailFilter := bson.M{"email": user.Email}
 
 	if email == "" {
@@ -85,11 +91,38 @@ func VerifyUserEmail(c *gin.Context) {
 		return
 	}
 
-	// finally insert user data to db
-	_, err = coll.InsertOne(ctx, user)
+	defaultCredits := &models.AppCredits{
+		Email:        user.Email,
+		TotalCredits: 10,
+	}
+
+	session, err := mongoClient.StartSession()
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{
-			"status": "Error is attempting to SignUp",
+			"status": "Failed to start a mongoDB session",
+			"error":  err.Error(),
+		})
+	}
+	defer session.EndSession(ctx)
+
+	// Define transaction function
+	transactionCallback := func(sessCtx mongo.SessionContext) (interface{}, error) {
+		if _, err := coll.InsertOne(ctx, user); err != nil {
+			return nil, fmt.Errorf("failed in Creating the User, %v", err)
+		}
+
+		if _, err := coll2.InsertOne(ctx, defaultCredits); err != nil {
+			return nil, fmt.Errorf("error in setting Credit Score for the user, %v", err)
+		}
+
+		return nil, nil
+	}
+
+	// Execute the transaction
+	result, err := session.WithTransaction(context.TODO(), transactionCallback, options.Transaction())
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"status": "DB transaction failed :/",
 			"error":  err.Error(),
 		})
 		return
@@ -97,5 +130,8 @@ func VerifyUserEmail(c *gin.Context) {
 
 	c.JSON(http.StatusOK, gin.H{
 		"status": "User SignUp Successful",
+		"result": result,
 	})
 }
+
+// 36:19
